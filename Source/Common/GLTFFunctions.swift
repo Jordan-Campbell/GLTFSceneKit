@@ -39,7 +39,7 @@ func length(_ v: SCNVector3) -> SCNFloat {
     #else
         // CGFloat = Float
         return SCNFloat(sqrtf(l2))
-    #endif    
+    #endif
 }
 
 func normalize(_ v: SCNVector3) -> SCNVector3 {
@@ -50,7 +50,7 @@ func createNormal(_ v0: SCNVector3, _ v1: SCNVector3, _ v2: SCNVector3) -> SCNVe
     let e1 = sub(v1, v0)
     let e2 = sub(v2, v0)
     let n = cross(e1, e2)
-    
+
     return normalize(n)
 }
 
@@ -61,10 +61,10 @@ func createVertexArray(from source: SCNGeometrySource) throws -> [SCNVector3] {
     if !source.usesFloatComponents || source.bytesPerComponent != 4 {
         throw GLTFUnarchiveError.NotSupported("createVertexArray: only float source is supported")
     }
-    
+
     let dummy = SCNVector3()
     var vertices = [SCNVector3](repeating: dummy, count: source.vectorCount)
-    
+
     source.data.withUnsafeBytes { (p: UnsafePointer<Float32>) in
         var index = source.dataOffset / 4
         let step = source.dataStride / 4
@@ -115,14 +115,14 @@ func createIndexArray(from element: SCNGeometryElement) -> [Int] {
             }
         }
     }
-    
+
     return indices
 }
 
 func createKeyTimeArray(from data: Data, offset: Int, stride: Int, count: Int) -> ([NSNumber], CFTimeInterval) {
     assert(stride == 4) // TODO: implement for other strides
     guard count > 0 else { return ([], 0) }
-    
+
     //var floatArray = [Float32]()
     //floatArray.reserveCapacity(count)
     var floatArray = [Float32](repeating: 0.0, count: count)
@@ -130,11 +130,7 @@ func createKeyTimeArray(from data: Data, offset: Int, stride: Int, count: Int) -
         data.copyBytes(to: $0, from: data.startIndex + offset..<data.startIndex + offset + count * 4)
     }
     let duration = Float(floatArray.last!)
-    print("duration: \(duration)")
-    for val in floatArray {
-        print("dur val: \(val)")
-    }
-    
+
     let numberArray: [NSNumber] = floatArray.map { NSNumber(value: $0 / duration) }
     return (numberArray, CFTimeInterval(duration))
 }
@@ -255,19 +251,19 @@ func getMetallicRoughnessTexture(from image: CGImage) throws -> (CGImage, CGImag
     let srcDataSize = w * h * srcBytesPerPixel
     let rawPtr: UnsafeMutableRawPointer = malloc(srcDataSize)
     defer { free(rawPtr) }
-    
+
     let dstBytesPerPixel = bitsPerComponent / 8
     let dstDataSize = w * h * dstBytesPerPixel
     let metalRawPtr: UnsafeMutableRawPointer = malloc(dstDataSize)
     defer { free(metalRawPtr) }
     let roughRawPtr: UnsafeMutableRawPointer = malloc(dstDataSize)
     defer { free(roughRawPtr) }
-    
+
     guard let context = CGContext(data: rawPtr, width: w, height: h, bitsPerComponent: bitsPerComponent, bytesPerRow: srcBytesPerPixel * w, space: colorSpace, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else {
         throw GLTFUnarchiveError.Unknown("getMetallicRoughnessTexture: failed to make textures")
     }
     context.draw(image, in: rect)
-    
+
     let ptr = rawPtr.bindMemory(to: UInt8.self, capacity: srcDataSize)
     let metalPtr = metalRawPtr.bindMemory(to: UInt8.self, capacity: dstDataSize)
     let roughPtr = roughRawPtr.bindMemory(to: UInt8.self, capacity: dstDataSize)
@@ -282,7 +278,7 @@ func getMetallicRoughnessTexture(from image: CGImage) throws -> (CGImage, CGImag
         }
     }
     let dstColorSpace = CGColorSpaceCreateDeviceGray()
-    
+
     let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue)
     guard let metalData = CFDataCreate(nil, metalPtr, dstDataSize) else {
         throw GLTFUnarchiveError.Unknown("getMetallicRoughnessTexture: failed to make metalData")
@@ -303,7 +299,7 @@ func getMetallicRoughnessTexture(from image: CGImage) throws -> (CGImage, CGImag
         intent: CGColorRenderingIntent.defaultIntent) else {
         throw GLTFUnarchiveError.Unknown("getMetallicRoughnessTexture: failed to make metalImage")
     }
-    
+
     guard let roughData = CFDataCreate(nil, roughPtr, dstDataSize) else {
         throw GLTFUnarchiveError.Unknown("getMetallicRoughnessTexture: failed to make roughData")
     }
@@ -323,6 +319,6 @@ func getMetallicRoughnessTexture(from image: CGImage) throws -> (CGImage, CGImag
         intent: CGColorRenderingIntent.defaultIntent) else {
         throw GLTFUnarchiveError.Unknown("getMetallicRoughnessTexture: failed to make roughImage")
     }
-    
+
     return (metalImage, roughImage)
 }
